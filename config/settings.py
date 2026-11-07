@@ -5,6 +5,7 @@ wake word identity, audio thresholds, and registered commands.
 """
 
 from dataclasses import dataclass, field
+import json
 import os
 from pathlib import Path
 import shutil
@@ -22,20 +23,37 @@ class AppConfig:
     identifier: str
     display_name: str
     executable_path: str
+    candidates: List[str] = field(default_factory=list)
     default_args: List[str] = field(default_factory=list)
     new_window_args: List[str] = field(default_factory=list)
     url_args: List[str] = field(default_factory=list)
 
     def resolve_binary(self) -> Optional[str]:
         """
-        Locates the binary either via absolute path or system PATH lookup.
+        Locates the binary either via primary path, fallback candidates, or system PATH lookup.
         Returns the resolved absolute path or None if not found/not executable.
         """
-        if os.path.isabs(self.executable_path):
-            if os.path.isfile(self.executable_path) and os.access(self.executable_path, os.X_OK):
-                return self.executable_path
-            return None
-        return shutil.which(self.executable_path)
+        # 1. Test primary configured executable_path
+        primary = os.path.expanduser(self.executable_path)
+        if os.path.isabs(primary):
+            if os.path.isfile(primary) and os.access(primary, os.X_OK):
+                return primary
+        else:
+            found = shutil.which(primary)
+            if found:
+                return found
+
+        # 2. Check fallback candidates
+        for cand in self.candidates:
+            expanded = os.path.expanduser(cand)
+            if os.path.isabs(expanded):
+                if os.path.isfile(expanded) and os.access(expanded, os.X_OK):
+                    return expanded
+            else:
+                found = shutil.which(expanded)
+                if found:
+                    return found
+        return None
 
 
 @dataclass(frozen=True)
@@ -95,6 +113,14 @@ class Settings:
             identifier="brave",
             display_name="Brave Browser",
             executable_path=os.environ.get("BRAVE_BIN", "/usr/bin/brave-browser-stable"),
+            candidates=[
+                "/usr/bin/brave-browser-stable",
+                "/usr/bin/brave-browser",
+                "/usr/bin/brave",
+                "/var/lib/flatpak/exports/bin/com.brave.Browser",
+                os.path.expanduser("~/.local/share/flatpak/exports/bin/com.brave.Browser"),
+                "/snap/bin/brave",
+            ],
             new_window_args=["--new-window"],
         ),
         "antigravity": AppConfig(
@@ -102,19 +128,42 @@ class Settings:
             display_name="Antigravity",
             executable_path=os.environ.get(
                 "ANTIGRAVITY_BIN",
-                "/home/rayyan-error/Applications/Antigravity/Antigravity-x64/antigravity"
+                os.path.expanduser("~/Applications/Antigravity/Antigravity-x64/antigravity")
             ),
+            candidates=[
+                os.path.expanduser("~/Applications/Antigravity/Antigravity-x64/antigravity"),
+                os.path.expanduser("~/Downloads/Antigravity/Antigravity-x64/antigravity"),
+                "/opt/Antigravity/antigravity",
+                "antigravity",
+            ],
         ),
         "vscode": AppConfig(
             identifier="vscode",
             display_name="Visual Studio Code",
             executable_path=os.environ.get("VSCODE_BIN", "code"),
+            candidates=[
+                "code",
+                "code-oss",
+                "/var/lib/flatpak/exports/bin/com.visualstudio.code",
+                os.path.expanduser("~/.local/share/flatpak/exports/bin/com.visualstudio.code"),
+                "/snap/bin/code",
+            ],
             new_window_args=["--new-window"],
         ),
         "terminal": AppConfig(
             identifier="terminal",
             display_name="GNOME Terminal",
             executable_path=os.environ.get("TERMINAL_BIN", "/usr/bin/gnome-terminal"),
+            candidates=[
+                "/usr/bin/gnome-terminal",
+                "gnome-terminal",
+                "ptyxis",
+                "x-terminal-emulator",
+                "konsole",
+                "xfce4-terminal",
+                "alacritty",
+                "kitty",
+            ],
             default_args=[f"--working-directory={os.path.expanduser('~')}"],
             new_window_args=["--window"],
         ),
@@ -125,17 +174,40 @@ class Settings:
                 "CRYPTOMATOR_BIN",
                 "/var/lib/flatpak/exports/bin/org.cryptomator.Cryptomator"
             ),
+            candidates=[
+                "/var/lib/flatpak/exports/bin/org.cryptomator.Cryptomator",
+                os.path.expanduser("~/.local/share/flatpak/exports/bin/org.cryptomator.Cryptomator"),
+                "cryptomator",
+                os.path.expanduser("~/Applications/Cryptomator.AppImage"),
+            ],
         ),
         "text_editor": AppConfig(
             identifier="text_editor",
             display_name="Text Editor",
             executable_path=os.environ.get("TEXT_EDITOR_BIN", "/usr/bin/gnome-text-editor"),
+            candidates=[
+                "/usr/bin/gnome-text-editor",
+                "gnome-text-editor",
+                "gedit",
+                "xed",
+                "kate",
+                "mousepad",
+                "leafpad",
+            ],
             new_window_args=["--new-window"],
         ),
         "settings": AppConfig(
             identifier="settings",
             display_name="Settings",
             executable_path=os.environ.get("SETTINGS_BIN", "/usr/bin/gnome-control-center"),
+            candidates=[
+                "/usr/bin/gnome-control-center",
+                "gnome-control-center",
+                "systemsettings",
+                "xfce4-settings-manager",
+                "cinnamon-settings",
+                "mate-control-center",
+            ],
         ),
     })
 
@@ -328,6 +400,34 @@ class Settings:
         "github": "git hub",
         "linkedin": "linked in",
     })
+
+    def __post_init__(self) -> None:
+        """Post-initialization to load machine-specific configuration overrides."""
+        self._load_local_overrides()
+
+    def _load_local_overrides(self) -> None:
+        """Loads machine-specific application overrides from config/local_apps.json if present."""
+        local_file = PROJECT_ROOT / "config" / "local_apps.json"
+        if not local_file.is_file():
+            return
+        try:
+            with open(local_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            for app_id, app_data in data.items():
+                app_key = app_id.lower()
+                if app_key in self.APPS:
+                    orig = self.APPS[app_key]
+                    self.APPS[app_key] = AppConfig(
+                        identifier=orig.identifier,
+                        display_name=app_data.get("display_name", orig.display_name),
+                        executable_path=app_data.get("executable_path", orig.executable_path),
+                        candidates=app_data.get("candidates", orig.candidates),
+                        default_args=app_data.get("default_args", orig.default_args),
+                        new_window_args=app_data.get("new_window_args", orig.new_window_args),
+                        url_args=app_data.get("url_args", orig.url_args),
+                    )
+        except Exception:
+            pass
 
     @property
     def wake_word(self) -> str:

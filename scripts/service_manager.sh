@@ -2,15 +2,24 @@
 # Service manager script for Project Caramel / Uranus (User systemd)
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SERVICE_NAME="caramel.service"
 USER_SYSTEMD_DIR="${HOME}/.config/systemd/user"
-SERVICE_SRC="/home/rayyan-error/Projects/Uranus/systemd/${SERVICE_NAME}"
+SERVICE_SRC="${PROJECT_ROOT}/systemd/${SERVICE_NAME}"
+PYTHON_BIN="${PROJECT_ROOT}/.venv/bin/python"
+PORTAUDIO_PATH="${PROJECT_ROOT}/.venv/lib/portaudio/libportaudio.so.2"
 
 case "$1" in
     install)
-        echo "Installing ${SERVICE_NAME} to ${USER_SYSTEMD_DIR}..."
+        echo "Installing ${SERVICE_NAME} for user $(whoami) to ${USER_SYSTEMD_DIR}..."
         mkdir -p "${USER_SYSTEMD_DIR}"
-        cp "${SERVICE_SRC}" "${USER_SYSTEMD_DIR}/${SERVICE_NAME}"
+        # Dynamically substitute paths for the current machine and clone location
+        sed \
+            -e "s|WorkingDirectory=.*|WorkingDirectory=${PROJECT_ROOT}|g" \
+            -e "s|ExecStart=.*|ExecStart=${PYTHON_BIN} ${PROJECT_ROOT}/run.py|g" \
+            -e "s|Environment=PORTAUDIO_PATH=.*|Environment=PORTAUDIO_PATH=${PORTAUDIO_PATH}|g" \
+            "${SERVICE_SRC}" > "${USER_SYSTEMD_DIR}/${SERVICE_NAME}"
         systemctl --user daemon-reload
         systemctl --user enable "${SERVICE_NAME}"
         echo "Service installed and enabled for user login autostart."

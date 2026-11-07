@@ -21,6 +21,7 @@ models/
 .DS_Store
 *.lock
 /tmp/caramel_agent.lock
+config/local_apps.json
 
 # IDE & editors
 .vscode/

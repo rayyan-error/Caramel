@@ -19,16 +19,37 @@
 
 ---
 
-## 2. Directory Structure
+## 2. Quick Start & Universal Linux Installation
+
+Clone the repository and run the installer:
+
+```bash
+git clone https://github.com/rayyan-error/Caramel.git
+cd Caramel
+./install.sh
+```
+
+The installer automatically:
+1. Verifies system dependencies (`python3-venv`, `libportaudio2`, `libespeak-ng1`, `curl`, `unzip`).
+2. Creates the `.venv` Python virtual environment and installs packages from `requirements.txt`.
+3. Downloads the offline AI models (`silero_vad.onnx` and `vosk-model-small-en-us-0.15`).
+4. **Auto-discovers applications** on your specific Linux system (Brave, Chrome, GNOME Terminal, Konsole, Alacritty, GNOME Text Editor, Gedit, Settings, Cryptomator) and writes your local configuration.
+5. Runs the self-diagnostic verification test suite.
+6. Offers to configure the background user systemd service for startup on login.
+
+---
+
+## 3. Directory Structure
 
 ```text
-/home/rayyan-error/Projects/Uranus/
+Caramel/
 ├── config/
 │   ├── __init__.py
-│   └── settings.py          # Central identity (AGENT_NAME), audio settings & app registry
+│   ├── settings.py          # Central identity, audio parameters, candidate applications & Trie registry
+│   └── local_apps.json      # Machine-specific autodetected application overrides (gitignored)
 ├── caramel/
 │   ├── audio/
-│   │   ├── capture.py       # Non-blocking 16kHz PCM streaming (sounddevice / ALSA)
+│   │   ├── capture.py       # Non-blocking 16kHz PCM streaming (PipeWire/Pulse/ALSA)
 │   │   └── vad.py           # Silero VAD v5 ONNX engine & 400ms EOU detector
 │   ├── recognizer/
 │   │   └── vosk_engine.py   # Streaming Vosk recognizer with dynamic constrained grammar
@@ -45,19 +66,14 @@
 │   ├── silero_vad.onnx      # Local Silero VAD v5 model (2.3 MB)
 │   └── vosk-model-small-en-us-0.15/ # Local Kaldi acoustic model
 ├── systemd/
-│   └── caramel.service      # User systemd service unit
+│   └── caramel.service      # User systemd service unit template
 ├── scripts/
-│   ├── download_models.py   # Model download script
+│   ├── configure_apps.py    # Desktop app autodetection & path resolver
+│   ├── download_models.py   # Automated offline AI model downloader
 │   └── service_manager.sh   # Background service manager (install/start/stop/status)
-├── tests/
-│   ├── test_part1_config.py
-│   ├── test_part2_audio_vad.py
-│   ├── test_part3_vosk_recognizer.py
-│   ├── test_part4_trie_matcher.py
-│   ├── test_part5_launcher.py
-│   ├── test_part6_state_machine.py
-│   └── test_part7_cli_and_service.py
-├── run.py                   # Main CLI runtime entry point
+├── install.sh               # One-click universal installer
+├── tests/                   # Complete automated test suites
+└── run.py                   # Main CLI runtime entry point
 └── requirements.txt         # Pinned dependencies
 ```
 
