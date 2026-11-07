@@ -43,6 +43,10 @@ def test_exact_v1_commands_matching():
         ("open settings", "CMD_OPEN_SETTINGS"),
         ("open instagram", "CMD_OPEN_INSTAGRAM"),
         ("open instagram in a new window", "CMD_OPEN_INSTAGRAM_NEW_WINDOW"),
+        ("open github", "CMD_OPEN_GITHUB"),
+        ("open github in a new window", "CMD_OPEN_GITHUB_NEW_WINDOW"),
+        ("open linkedin", "CMD_OPEN_LINKEDIN"),
+        ("open linkedin in a new window", "CMD_OPEN_LINKEDIN_NEW_WINDOW"),
     ]
 
     for phrase, expected_id in test_cases:
@@ -69,6 +73,8 @@ def test_alias_resolution():
         ("open insta", "CMD_OPEN_INSTAGRAM"),
         ("open editor", "CMD_OPEN_TEXT_EDITOR"),
         ("open settings app", "CMD_OPEN_SETTINGS"),
+        ("open git hub", "CMD_OPEN_GITHUB"),
+        ("open linked in", "CMD_OPEN_LINKEDIN"),
     ]
     for alias_phrase, expected_id in aliases_to_test:
         res, cmd = registry.evaluate(alias_phrase)

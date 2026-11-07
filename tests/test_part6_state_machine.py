@@ -486,6 +486,24 @@ def test_real_audio_end_to_end_pipeline():
             ]),
             "CMD_OPEN_INSTAGRAM"
         ),
+        (
+            "GitHub 'Caramel, open GitHub'",
+            np.concatenate([
+                np.zeros(3200, dtype=np.int16),
+                synth_16k("caramel open git hub"),
+                np.zeros(12000, dtype=np.int16)
+            ]),
+            "CMD_OPEN_GITHUB"
+        ),
+        (
+            "LinkedIn 'Caramel, open LinkedIn'",
+            np.concatenate([
+                np.zeros(3200, dtype=np.int16),
+                synth_16k("caramel open linked in"),
+                np.zeros(12000, dtype=np.int16)
+            ]),
+            "CMD_OPEN_LINKEDIN"
+        ),
     ]
 
     for label, stream, expected_cmd_id in scenarios:

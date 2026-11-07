@@ -50,7 +50,7 @@ def test_model_independent_config_loading():
     assert not cfg.SILERO_VAD_MODEL_PATH.exists()
     assert not cfg.VOSK_MODEL_PATH.exists()
     assert cfg.wake_word == "caramel"
-    assert len(cfg.get_grammar_list()) == 31
+    assert len(cfg.get_grammar_list()) == 35
     print("  -> Passed: Configuration loads and operates with zero dependency on installed model files.")
 
 
@@ -94,7 +94,7 @@ def test_initial_commands_validation():
     """Verify initial V1 command set and integrity against registered apps."""
     print("[TEST] 5. Initial Command Registry Integrity...")
     commands = config.COMMANDS
-    assert len(commands) == 16, f"Expected 16 commands, got {len(commands)}"
+    assert len(commands) == 20, f"Expected 20 commands, got {len(commands)}"
 
     expected_phrases = {
         "open brave",
@@ -113,6 +113,10 @@ def test_initial_commands_validation():
         "open settings",
         "open instagram",
         "open instagram in a new window",
+        "open github",
+        "open github in a new window",
+        "open linkedin",
+        "open linkedin in a new window",
     }
     actual_phrases = {cmd.phrase for cmd in commands}
     assert actual_phrases == expected_phrases, f"Phrases mismatch: {actual_phrases} vs {expected_phrases}"
@@ -122,7 +126,7 @@ def test_initial_commands_validation():
         app = config.get_app(cmd.target_app)
         assert app is not None, f"Command {cmd.command_id} references unregistered app '{cmd.target_app}'"
 
-    print("  -> Passed: All 16 commands verified with valid app targets.")
+    print("  -> Passed: All 20 commands verified with valid app targets.")
 
 
 def test_vosk_grammar_generation():
@@ -148,12 +152,16 @@ def test_vosk_grammar_generation():
         "open gcr in a new window",
         "open gemini",
         "open gemini in a new window",
+        "open git hub",
+        "open git hub in a new window",
         "open google classroom",
         "open google classroom in a new window",
         "open insta",
         "open insta in a new window",
         "open instagram",
         "open instagram in a new window",
+        "open linked in",
+        "open linked in in a new window",
         "open settings",
         "open settings app",
         "open terminal",
@@ -166,6 +174,8 @@ def test_vosk_grammar_generation():
     assert "antigravity" not in grammar, "OOV compound word 'antigravity' must be acoustically decomposed"
     assert "cryptometer" not in grammar, "OOV compound word 'cryptometer' must be acoustically decomposed"
     assert "crunchyroll" not in grammar, "OOV compound word 'crunchyroll' must be acoustically decomposed"
+    assert "github" not in grammar, "Compound word 'github' must be acoustically decomposed"
+    assert "linkedin" not in grammar, "Compound word 'linkedin' must be acoustically decomposed"
     assert "a" not in grammar and "in" not in grammar, "Standalone function words must not pollute grammar"
     print(f"  -> Passed: Clean acoustic grammar generated ({len(grammar)} entries): {grammar}")
 

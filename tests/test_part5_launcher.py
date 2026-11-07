@@ -123,6 +123,22 @@ def test_v1_commands_argv_construction():
     assert res.executed_args[-1] == "https://www.instagram.com"
     print(f"  -> CMD_OPEN_INSTAGRAM => {res.executed_args}")
 
+    # 14. Open GitHub -> [brave, "https://github.com"]
+    cmd_gh = next(c for c in config.COMMANDS if c.command_id == "CMD_OPEN_GITHUB")
+    res = launcher.execute(cmd_gh)
+    assert res.success, f"Failed building argv for GitHub: {res.message}"
+    assert "--new-window" not in res.executed_args
+    assert res.executed_args[-1] == "https://github.com"
+    print(f"  -> CMD_OPEN_GITHUB => {res.executed_args}")
+
+    # 15. Open LinkedIn -> [brave, "https://www.linkedin.com"]
+    cmd_li = next(c for c in config.COMMANDS if c.command_id == "CMD_OPEN_LINKEDIN")
+    res = launcher.execute(cmd_li)
+    assert res.success, f"Failed building argv for LinkedIn: {res.message}"
+    assert "--new-window" not in res.executed_args
+    assert res.executed_args[-1] == "https://www.linkedin.com"
+    print(f"  -> CMD_OPEN_LINKEDIN => {res.executed_args}")
+
     print("  -> Passed: All 4 initial V1 commands compile to exact specified argv lists.")
 
 

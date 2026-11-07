@@ -281,6 +281,42 @@ class Settings:
             url="https://www.instagram.com",
             aliases=["open insta in a new window"],
         ),
+        CommandDefinition(
+            command_id="CMD_OPEN_GITHUB",
+            phrase="open github",
+            action_type="OPEN_URL",
+            target_app="brave",
+            new_window=False,
+            url="https://github.com",
+            aliases=["open git hub"],
+        ),
+        CommandDefinition(
+            command_id="CMD_OPEN_GITHUB_NEW_WINDOW",
+            phrase="open github in a new window",
+            action_type="OPEN_URL",
+            target_app="brave",
+            new_window=True,
+            url="https://github.com",
+            aliases=["open git hub in a new window"],
+        ),
+        CommandDefinition(
+            command_id="CMD_OPEN_LINKEDIN",
+            phrase="open linkedin",
+            action_type="OPEN_URL",
+            target_app="brave",
+            new_window=False,
+            url="https://www.linkedin.com",
+            aliases=["open linked in"],
+        ),
+        CommandDefinition(
+            command_id="CMD_OPEN_LINKEDIN_NEW_WINDOW",
+            phrase="open linkedin in a new window",
+            action_type="OPEN_URL",
+            target_app="brave",
+            new_window=True,
+            url="https://www.linkedin.com",
+            aliases=["open linked in in a new window"],
+        ),
     ])
 
     # Acoustic lexicon replacements for compound words absent from small Kaldi graphs
@@ -289,6 +325,8 @@ class Settings:
         "cryptometer": "crypto meter",
         "cryptomator": "crypto mater",
         "crunchyroll": "crunchy roll",
+        "github": "git hub",
+        "linkedin": "linked in",
     })
 
     @property
