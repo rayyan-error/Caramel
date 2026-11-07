@@ -1,0 +1,29 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local model weights & large binaries (downloaded via scripts/download_models.py)
+models/
+!models/.gitkeep
+
+# System & locks
+.DS_Store
+*.lock
+/tmp/caramel_agent.lock
+
+# IDE & editors
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,5 @@
+# Project Caramel / Uranus Dependencies
+sounddevice>=0.4.6
+numpy>=1.26.0,<3.0.0
+vosk>=0.3.45
+onnxruntime>=1.17.0

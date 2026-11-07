@@ -1,0 +1,18 @@
+[Unit]
+Description=Project Caramel / Uranus Voice-Controlled Desktop Agent
+After=graphical-session.target pipewire.service pipewire-pulse.service wireplumber.service sound.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rayyan-error/Projects/Uranus
+ExecStart=/home/rayyan-error/Projects/Uranus/.venv/bin/python /home/rayyan-error/Projects/Uranus/run.py
+Restart=on-failure
+RestartSec=3
+# Only kill the main Caramel agent process on stop/restart so spawned GUI apps (Brave, Antigravity) stay open
+KillMode=process
+Environment=PYTHONUNBUFFERED=1
+Environment=PORTAUDIO_PATH=/home/rayyan-error/Projects/Uranus/.venv/lib/portaudio/libportaudio.so.2
+
+[Install]
+WantedBy=default.target graphical-session.target
