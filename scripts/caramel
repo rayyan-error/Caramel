@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# Project Caramel / Uranus (v0.2.5) — CLI & Service Controller
+set -e
+
+# Resolve script directory and project root even when invoked via symlink
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+    DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+PROJECT_ROOT="$(cd -P "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
+
+SERVICE_NAME="caramel.service"
+VENV_PYTHON="${PROJECT_ROOT}/.venv/bin/python"
+
+# ANSI Colors
+GREEN="\033[92m"
+YELLOW="\033[93m"
+BLUE="\033[94m"
+RED="\033[91m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
+show_help() {
+    echo -e "${BOLD}${BLUE}Project Caramel / Uranus (v0.2.5) — CLI & Service Controller${RESET}\n"
+    echo -e "Usage:"
+    echo -e "  ${BOLD}caramel restart${RESET}         Restart the background Caramel service"
+    echo -e "  ${BOLD}caramel status${RESET}          Show service status and recent journal logs"
+    echo -e "  ${BOLD}caramel start${RESET}           Start the background service"
+    echo -e "  ${BOLD}caramel stop${RESET}            Stop the background service"
+    echo -e "  ${BOLD}caramel logs${RESET}            Follow live background service logs"
+    echo -e "  ${BOLD}caramel run [options]${RESET}   Run Caramel in the foreground"
+    echo -e "  ${BOLD}caramel --dry-run${RESET}       Run foreground agent in dry-run mode"
+    echo -e "  ${BOLD}caramel --benchmark${RESET}     Run offline latency benchmark"
+    echo -e "  ${BOLD}caramel --version, -v${RESET}   Display version information"
+    echo -e "  ${BOLD}caramel --help, -h${RESET}      Show this help message\n"
+}
+
+case "$1" in
+    restart)
+        echo -e "${BLUE}Restarting ${SERVICE_NAME}...${RESET}"
+        systemctl --user restart "${SERVICE_NAME}"
+        sleep 0.5
+        if systemctl --user is-active --quiet "${SERVICE_NAME}"; then
+            echo -e "${GREEN}${BOLD}[OK] Caramel service (v0.2.5) successfully restarted and active.${RESET}\n"
+            systemctl --user status "${SERVICE_NAME}" --no-pager -l -n 5
+        else
+            echo -e "${RED}[Error] Failed to restart ${SERVICE_NAME}.${RESET}"
+            systemctl --user status "${SERVICE_NAME}" --no-pager -l
+            exit 1
+        fi
+        ;;
+    status)
+        systemctl --user status "${SERVICE_NAME}" --no-pager -l
+        ;;
+    start)
+        echo -e "${BLUE}Starting ${SERVICE_NAME}...${RESET}"
+        systemctl --user start "${SERVICE_NAME}"
+        systemctl --user status "${SERVICE_NAME}" --no-pager -l -n 5
+        ;;
+    stop)
+        echo -e "${YELLOW}Stopping ${SERVICE_NAME}...${RESET}"
+        systemctl --user stop "${SERVICE_NAME}"
+        echo -e "${GREEN}[OK] Caramel service stopped.${RESET}"
+        ;;
+    logs)
+        journalctl --user -u "${SERVICE_NAME}" -f
+        ;;
+    run|--foreground)
+        shift
+        exec "${VENV_PYTHON}" "${PROJECT_ROOT}/run.py" "$@"
+        ;;
+    --dry-run)
+        shift
+        exec "${VENV_PYTHON}" "${PROJECT_ROOT}/run.py" --dry-run "$@"
+        ;;
+    --benchmark)
+        shift
+        exec "${VENV_PYTHON}" "${PROJECT_ROOT}/run.py" --benchmark "$@"
+        ;;
+    --version|-v)
+        echo "Caramel v0.2.5 (Project Uranus)"
+        ;;
+    --help|-h|"")
+        show_help
+        ;;
+    *)
+        # If options like --name, --device, etc. are passed, forward to run.py
+        if [[ "$1" == -* ]]; then
+            exec "${VENV_PYTHON}" "${PROJECT_ROOT}/run.py" "$@"
+        else
+            echo -e "${RED}Unknown command: $1${RESET}\n"
+            show_help
+            exit 1
+        fi
+        ;;
+esac

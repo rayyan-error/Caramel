@@ -109,6 +109,31 @@ def test_cli_modes_and_benchmarks():
     print("  -> Passed: CLI --help, --list-devices, and --benchmark modes verified.")
 
 
+def test_caramel_cli_script():
+    """Verify scripts/caramel CLI controller (--version, --help, status)."""
+    print("[TEST] 5. Caramel CLI Script Controller...")
+    caramel_script = str(PROJECT_ROOT / "scripts" / "caramel")
+    assert os.path.isfile(caramel_script), "scripts/caramel missing"
+    assert os.access(caramel_script, os.X_OK), "scripts/caramel is not executable"
+
+    # 1. Version check
+    res = subprocess.run([caramel_script, "--version"], capture_output=True, text=True)
+    assert res.returncode == 0, f"caramel --version failed: {res.stderr}"
+    assert "Caramel v0.2.5" in res.stdout
+
+    # 2. Help check
+    res = subprocess.run([caramel_script, "--help"], capture_output=True, text=True)
+    assert res.returncode == 0, f"caramel --help failed: {res.stderr}"
+    assert "caramel restart" in res.stdout
+    assert "caramel status" in res.stdout
+
+    # 3. Status check
+    res = subprocess.run([caramel_script, "status"], capture_output=True, text=True)
+    assert res.returncode == 0, f"caramel status failed: {res.stderr}"
+    assert "caramel.service" in res.stdout
+    print("  -> Passed: scripts/caramel CLI controller verified.")
+
+
 def run_all():
     print("==================================================")
     print("RUNNING PART 7 VALIDATION TESTS")
@@ -117,6 +142,7 @@ def run_all():
     test_performance_monitoring()
     test_systemd_unit_configuration()
     test_cli_modes_and_benchmarks()
+    test_caramel_cli_script()
     print("==================================================")
     print("ALL PART 7 TESTS PASSED SUCCESSFULLY!")
     print("==================================================")

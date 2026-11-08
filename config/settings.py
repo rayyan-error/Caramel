@@ -79,6 +79,7 @@ class Settings:
     # 1. Identity & Wake Word
     # Change AGENT_NAME to "Uranus" for production release.
     # -------------------------------------------------------------------------
+    VERSION: str = "0.2.5"
     AGENT_NAME: str = "Caramel"
 
     # -------------------------------------------------------------------------

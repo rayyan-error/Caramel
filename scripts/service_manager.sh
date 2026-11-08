@@ -22,7 +22,11 @@ case "$1" in
             "${SERVICE_SRC}" > "${USER_SYSTEMD_DIR}/${SERVICE_NAME}"
         systemctl --user daemon-reload
         systemctl --user enable "${SERVICE_NAME}"
+        mkdir -p "${HOME}/.local/bin"
+        ln -sf "${PROJECT_ROOT}/scripts/caramel" "${HOME}/.local/bin/caramel"
         echo "Service installed and enabled for user login autostart."
+        echo "CLI command 'caramel' linked to ${HOME}/.local/bin/caramel."
+        echo "To restart anytime, run: caramel restart"
         echo "To start immediately, run: $0 start"
         ;;
     start)

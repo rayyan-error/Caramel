@@ -189,8 +189,11 @@ echo -e "${BOLD}${GREEN}  Project Caramel / Uranus successfully installed and re
 echo -e "${BOLD}${GREEN}====================================================================${RESET}\n"
 
 # ------------------------------------------------------------------------------
-# Optional: Setup systemd login autostart
+# Optional: Setup systemd login autostart & CLI shortcut
 # ------------------------------------------------------------------------------
+mkdir -p "${HOME}/.local/bin"
+ln -sf "${PROJECT_ROOT}/scripts/caramel" "${HOME}/.local/bin/caramel"
+
 if [ "$SKIP_SERVICE" = false ]; then
     if [ "$NON_INTERACTIVE" = true ]; then
         ./scripts/service_manager.sh install
@@ -208,9 +211,10 @@ if [ "$SKIP_SERVICE" = false ]; then
     fi
 fi
 
-echo -e "\nTo test Caramel manually in the terminal:"
-echo -e "  ${BOLD}./.venv/bin/python run.py --dry-run${RESET}"
-echo -e "\nTo launch live:"
-echo -e "  ${BOLD}./.venv/bin/python run.py${RESET}"
-echo -e "\nTo manage the background service:"
-echo -e "  ${BOLD}./scripts/service_manager.sh {status|start|stop|restart|logs}${RESET}\n"
+echo -e "\nTo manage the Caramel service from any terminal:"
+echo -e "  ${BOLD}caramel restart${RESET}   (Restart the background service)"
+echo -e "  ${BOLD}caramel status${RESET}    (Check service health and logs)"
+echo -e "  ${BOLD}caramel logs${RESET}      (Stream live background logs)"
+echo -e "\nTo test Caramel manually in the foreground:"
+echo -e "  ${BOLD}caramel --dry-run${RESET}"
+echo -e "  ${BOLD}caramel run${RESET}\n"

@@ -164,7 +164,7 @@ def main() -> None:
         sys.exit(1)
 
     print("=" * 64)
-    print(f"  {agent_name.upper()} - Voice-Controlled Linux Desktop Agent (v0.2.0)")
+    print(f"  {agent_name.upper()} - Voice-Controlled Linux Desktop Agent (v{config.VERSION})")
     print("=" * 64)
     print(f"  Identity:               '{agent_name}' (Wake Word: '{wake_word}')")
     print(f"  Audio Input Device:     {audio.device!r} ({config.SAMPLE_RATE} Hz Mono PCM)")

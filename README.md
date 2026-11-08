@@ -1,4 +1,4 @@
-# Project Caramel / Uranus (v0.2.0)
+# Project Caramel / Uranus (v0.2.5)
 ## Lightweight, Voice-Controlled Linux Desktop Agent
 
 **Caramel** (production name: **Uranus**) is an ultra-fast, predictable, locally operated voice-controlled desktop agent designed specifically for Linux (Zorin OS / Ubuntu).
@@ -9,7 +9,8 @@
 
 - **Zero Cloud / Zero LLMs**: Completely offline. No cloud APIs, generative AI, semantic inference, or autonomous guessing.
 - **Deterministic Action**: Every executable command is explicitly registered in a prefix tree (Trie). Unknown or ambiguous speech is discarded.
-- **Dynamic Search Engine (v0.2)**: Open-vocabulary Kaldi intent extraction automatically formats dynamic queries for Google and YouTube.
+- **Dynamic Search Engine (v0.2+)**: Open-vocabulary Kaldi intent extraction automatically formats dynamic queries for Google and YouTube.
+- **Instant Service CLI (v0.2.5)**: Type `caramel restart`, `caramel status`, or `caramel logs` from any terminal.
 - **Ultra-Low Latency**:
   - Silero VAD chunk inference: **~0.10 ms** per 32 ms frame.
   - Vosk streaming ASR chunk inference: **~0.47 ms** per 32 ms frame.
@@ -149,7 +150,24 @@ Caramel/
 
 ---
 
-## 5. Usage
+## 5. Instant Service Management CLI (`caramel`)
+
+Caramel provides a native command-line utility linked to `~/.local/bin/caramel` (in your default `$PATH`):
+
+| Command | Action |
+| :--- | :--- |
+| `caramel restart` | **Instantly restarts** the background Caramel systemd service |
+| `caramel status` | Shows current service status, memory RSS, and recent journal logs |
+| `caramel logs` | Follows real-time live logs from the background daemon (`journalctl -f`) |
+| `caramel start` | Starts the background user service |
+| `caramel stop` | Stops the background service |
+| `caramel run` | Runs the agent directly in the foreground terminal |
+| `caramel --dry-run` | Runs the agent in foreground dry-run verification mode |
+| `caramel --help` | Shows full CLI usage and options |
+
+---
+
+## 6. Manual Foreground Usage
 
 ### A. Run in Terminal (Foreground)
 Activate virtualenv and start:
