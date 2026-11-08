@@ -76,7 +76,10 @@ def test_modular_app_registry():
     antigravity_app = cfg.get_app("antigravity")
     assert antigravity_app is not None
     assert "Antigravity" in antigravity_app.display_name
-    assert antigravity_app.executable_path == "/home/rayyan-error/Applications/Antigravity/Antigravity-x64/antigravity"
+    assert antigravity_app.executable_path in (
+        "/snap/bin/antigravity",
+        "/home/rayyan-error/Applications/Antigravity/Antigravity-x64/antigravity"
+    )
 
     # Test modular duplication / new app addition
     custom_editor = AppConfig(

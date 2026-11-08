@@ -39,7 +39,7 @@ def test_v1_commands_argv_construction():
     cmd_antigravity = next(c for c in config.COMMANDS if c.command_id == "CMD_OPEN_ANTIGRAVITY")
     res = launcher.execute(cmd_antigravity)
     assert res.success, f"Failed building argv for Antigravity: {res.message}"
-    assert res.executed_args == ["/home/rayyan-error/Applications/Antigravity/Antigravity-x64/antigravity"]
+    assert res.executed_args == [config.get_app("antigravity").executable_path]
     print(f"  -> CMD_OPEN_ANTIGRAVITY => {res.executed_args}")
 
     # 3. Open YouTube -> [brave, "https://youtube.com"]

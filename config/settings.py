@@ -128,13 +128,14 @@ class Settings:
             display_name="Antigravity",
             executable_path=os.environ.get(
                 "ANTIGRAVITY_BIN",
-                os.path.expanduser("~/Applications/Antigravity/Antigravity-x64/antigravity")
+                "/snap/bin/antigravity"
             ),
             candidates=[
+                "/snap/bin/antigravity",
+                "antigravity",
                 os.path.expanduser("~/Applications/Antigravity/Antigravity-x64/antigravity"),
                 os.path.expanduser("~/Downloads/Antigravity/Antigravity-x64/antigravity"),
                 "/opt/Antigravity/antigravity",
-                "antigravity",
             ],
         ),
         "vscode": AppConfig(
