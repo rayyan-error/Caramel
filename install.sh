@@ -182,6 +182,7 @@ echo -e "\n${BOLD}[6/6] Running system verification tests...${RESET}"
 "${VENV_PYTHON}" tests/test_part1_config.py >/dev/null && echo -e "  [✓] Configuration & dynamic grammar"
 "${VENV_PYTHON}" tests/test_part4_trie_matcher.py >/dev/null && echo -e "  [✓] Prefix-tree command matching"
 "${VENV_PYTHON}" tests/test_part5_launcher.py >/dev/null && echo -e "  [✓] Process execution & argument compilation"
+"${VENV_PYTHON}" tests/test_v02_features.py >/dev/null && echo -e "  [✓] Version 0.2 features (search, portals, apps, volume)"
 
 echo -e "\n${BOLD}${GREEN}====================================================================${RESET}"
 echo -e "${BOLD}${GREEN}  Project Caramel / Uranus successfully installed and ready!        ${RESET}"

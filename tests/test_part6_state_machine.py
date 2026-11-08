@@ -45,7 +45,22 @@ class MockRecognizer(VoskRecognizerEngine):
     def __init__(self, initial_text: str = ""):
         self.text_to_return = initial_text
         self.partial_text = initial_text
+        self.open_text_to_return = initial_text
         self._is_final = False
+        self._open_recognizer = None
+        self._open_streaming = False
+
+    def reset(self):
+        self.text_to_return = ""
+        self.partial_text = ""
+        self.open_text_to_return = ""
+        self._open_streaming = False
+
+    def start_open_decoding(self):
+        self._open_streaming = True
+
+    def stop_open_decoding(self):
+        self._open_streaming = False
 
     def feed_chunk(self, chunk, include_partial=False):
         return self._is_final, self.partial_text if include_partial else ""
@@ -58,6 +73,14 @@ class MockRecognizer(VoskRecognizerEngine):
         self.text_to_return = ""
         self.partial_text = ""
         return res
+
+    def get_open_final_result(self):
+        res = self.open_text_to_return
+        self.open_text_to_return = ""
+        return res
+
+    def transcribe_open_waveform(self, pcm_bytes):
+        return self.text_to_return or self.open_text_to_return
 
     def reset(self):
         self.text_to_return = ""

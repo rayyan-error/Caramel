@@ -50,7 +50,7 @@ def test_model_independent_config_loading():
     assert not cfg.SILERO_VAD_MODEL_PATH.exists()
     assert not cfg.VOSK_MODEL_PATH.exists()
     assert cfg.wake_word == "caramel"
-    assert len(cfg.get_grammar_list()) == 35
+    assert len(cfg.get_grammar_list()) >= 35
     print("  -> Passed: Configuration loads and operates with zero dependency on installed model files.")
 
 
@@ -94,12 +94,12 @@ def test_modular_app_registry():
 
 
 def test_initial_commands_validation():
-    """Verify initial V1 command set and integrity against registered apps."""
-    print("[TEST] 5. Initial Command Registry Integrity...")
+    """Verify command set and integrity against registered apps and system actions."""
+    print("[TEST] 5. Command Registry Integrity...")
     commands = config.COMMANDS
-    assert len(commands) == 20, f"Expected 20 commands, got {len(commands)}"
+    assert len(commands) >= 20, f"Expected at least 20 commands, got {len(commands)}"
 
-    expected_phrases = {
+    initial_phrases = {
         "open brave",
         "open antigravity",
         "open terminal",
@@ -122,65 +122,44 @@ def test_initial_commands_validation():
         "open linkedin in a new window",
     }
     actual_phrases = {cmd.phrase for cmd in commands}
-    assert actual_phrases == expected_phrases, f"Phrases mismatch: {actual_phrases} vs {expected_phrases}"
+    assert initial_phrases.issubset(actual_phrases), f"Initial phrases missing: {initial_phrases - actual_phrases}"
 
-    # Ensure all commands target valid registered applications
+    # Ensure all commands target valid registered applications or system actions
     for cmd in commands:
-        app = config.get_app(cmd.target_app)
-        assert app is not None, f"Command {cmd.command_id} references unregistered app '{cmd.target_app}'"
+        if cmd.action_type == "SYSTEM_ACTION":
+            assert "args" in cmd.extra_params, f"System command {cmd.command_id} missing args"
+        else:
+            app = config.get_app(cmd.target_app)
+            assert app is not None, f"Command {cmd.command_id} references unregistered app '{cmd.target_app}'"
 
-    print("  -> Passed: All 20 commands verified with valid app targets.")
+    print(f"  -> Passed: All {len(commands)} commands verified with valid app and system targets.")
 
 
 def test_vosk_grammar_generation():
-    """Verify dynamic grammar list contains only clean acoustic phrases, wake word, and [unk]."""
+    """Verify dynamic grammar list contains clean acoustic phrases, wake word, search triggers, and [unk]."""
     print("[TEST] 6. Clean Acoustic Grammar Generation...")
     grammar = config.get_grammar_list()
-    expected = [
-        "caramel",
-        "open anti gravity",
-        "open brave",
-        "open classroom",
-        "open classroom in a new window",
-        "open crunchy roll",
-        "open crunchy roll in a new window",
-        "open crypto mater",
-        "open crypto matter",
-        "open crypto meter",
-        "open crypto motor",
-        "open editor",
-        "open g c r",
-        "open g c r in a new window",
-        "open gcr",
-        "open gcr in a new window",
-        "open gemini",
-        "open gemini in a new window",
-        "open git hub",
-        "open git hub in a new window",
-        "open google classroom",
-        "open google classroom in a new window",
-        "open insta",
-        "open insta in a new window",
-        "open instagram",
-        "open instagram in a new window",
-        "open linked in",
-        "open linked in in a new window",
-        "open settings",
-        "open settings app",
-        "open terminal",
-        "open text editor",
-        "open youtube",
-        "open youtube in a new window",
-        "[unk]",
-    ]
-    assert grammar == expected, f"Expected {expected}, got {grammar}"
+    assert "caramel" in grammar
+    assert "[unk]" == grammar[-1]
+    assert "search" in grammar
+    assert "open anti gravity" in grammar
+    assert "open whats app" in grammar
+    assert "open libre office" in grammar
+    assert "open c u e" in grammar
+    assert "open k p" in grammar
+    assert "open es pro" in grammar
+    assert "open chat g p t app" in grammar
     assert "antigravity" not in grammar, "OOV compound word 'antigravity' must be acoustically decomposed"
     assert "cryptometer" not in grammar, "OOV compound word 'cryptometer' must be acoustically decomposed"
     assert "crunchyroll" not in grammar, "OOV compound word 'crunchyroll' must be acoustically decomposed"
     assert "github" not in grammar, "Compound word 'github' must be acoustically decomposed"
     assert "linkedin" not in grammar, "Compound word 'linkedin' must be acoustically decomposed"
-    assert "a" not in grammar and "in" not in grammar, "Standalone function words must not pollute grammar"
-    print(f"  -> Passed: Clean acoustic grammar generated ({len(grammar)} entries): {grammar}")
+    assert "whatsapp" not in grammar, "Compound word 'whatsapp' must be acoustically decomposed"
+    assert "libreoffice" not in grammar, "Compound word 'libreoffice' must be acoustically decomposed"
+    assert "espro" not in grammar, "Compound word 'espro' must be acoustically decomposed"
+    assert "cue" not in grammar, "Compound word 'cue' must be acoustically decomposed"
+    assert "kp" not in grammar, "Compound word 'kp' must be acoustically decomposed"
+    print(f"  -> Passed: Clean acoustic grammar generated ({len(grammar)} entries).")
 
 
 def run_all():

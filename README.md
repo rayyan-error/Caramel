@@ -1,4 +1,4 @@
-# Project Caramel / Uranus (v0.1.0)
+# Project Caramel / Uranus (v0.2.0)
 ## Lightweight, Voice-Controlled Linux Desktop Agent
 
 **Caramel** (production name: **Uranus**) is an ultra-fast, predictable, locally operated voice-controlled desktop agent designed specifically for Linux (Zorin OS / Ubuntu).
@@ -9,6 +9,7 @@
 
 - **Zero Cloud / Zero LLMs**: Completely offline. No cloud APIs, generative AI, semantic inference, or autonomous guessing.
 - **Deterministic Action**: Every executable command is explicitly registered in a prefix tree (Trie). Unknown or ambiguous speech is discarded.
+- **Dynamic Search Engine (v0.2)**: Open-vocabulary Kaldi intent extraction automatically formats dynamic queries for Google and YouTube.
 - **Ultra-Low Latency**:
   - Silero VAD chunk inference: **~0.10 ms** per 32 ms frame.
   - Vosk streaming ASR chunk inference: **~0.47 ms** per 32 ms frame.
@@ -33,7 +34,7 @@ The installer automatically:
 1. Verifies system dependencies (`python3-venv`, `libportaudio2`, `libespeak-ng1`, `curl`, `unzip`).
 2. Creates the `.venv` Python virtual environment and installs packages from `requirements.txt`.
 3. Downloads the offline AI models (`silero_vad.onnx` and `vosk-model-small-en-us-0.15`).
-4. **Auto-discovers applications** on your specific Linux system (Brave, Chrome, GNOME Terminal, Konsole, Alacritty, GNOME Text Editor, Gedit, Settings, Cryptomator) and writes your local configuration.
+4. **Auto-discovers applications** on your specific Linux system (Brave, Antigravity, LibreOffice, Files, Calculator, System Monitor, VLC, GIMP, Krita, OBS, ChatGPT, Terminal, Cryptomator) and writes your local configuration.
 5. Runs the self-diagnostic verification test suite.
 6. Offers to configure the background user systemd service for startup on login.
 
@@ -52,8 +53,9 @@ Caramel/
 │   │   ├── capture.py       # Non-blocking 16kHz PCM streaming (PipeWire/Pulse/ALSA)
 │   │   └── vad.py           # Silero VAD v5 ONNX engine & 400ms EOU detector
 │   ├── recognizer/
-│   │   └── vosk_engine.py   # Streaming Vosk recognizer with dynamic constrained grammar
+│   │   └── vosk_engine.py   # Hybrid streaming Vosk recognizer (constrained grammar + open vocabulary)
 │   ├── engine/
+│   │   ├── search.py        # Dynamic query parser & URL generator (Google / YouTube)
 │   │   ├── trie.py          # Deterministic prefix tree resolving prefix collisions
 │   │   ├── registry.py      # Command registration & alias management
 │   │   └── state_machine.py # 3-state engine: DORMANT -> LISTENING -> EXECUTING
@@ -72,27 +74,82 @@ Caramel/
 │   ├── download_models.py   # Automated offline AI model downloader
 │   └── service_manager.sh   # Background service manager (install/start/stop/status)
 ├── install.sh               # One-click universal installer
-├── tests/                   # Complete automated test suites
+├── tests/                   # Complete automated test suites (Part 1 to Part 7 + v02)
 └── run.py                   # Main CLI runtime entry point
 └── requirements.txt         # Pinned dependencies
 ```
 
 ---
 
-## 3. Initial V1 Commands
+## 4. Voice Commands Reference
 
-| Spoken Phrase | Action | Behavior |
+### A. Dynamic Web Searches (Google & YouTube)
+| Spoken Phrase | Engine | Target Action |
 | :--- | :--- | :--- |
-| `"Caramel, open Brave"` | `CMD_OPEN_BRAVE` | Spawns a dedicated new window of Brave browser (`--new-window`). |
-| `"Caramel, open Antigravity"` | `CMD_OPEN_ANTIGRAVITY` | Spawns Antigravity from `/home/rayyan-error/Applications/Antigravity/Antigravity-x64/antigravity`. |
-| `"Caramel, open YouTube"` | `CMD_OPEN_YOUTUBE` | Opens `https://youtube.com` in Brave (attaches to existing tab/window or launches Brave). |
-| `"Caramel, open YouTube in a new window"` | `CMD_OPEN_YOUTUBE_NEW_WINDOW` | Opens `https://youtube.com` in a separate Brave window (`--new-window`). |
+| `"Caramel, search <query>"` | Google | Opens Google search in a new tab in Brave |
+| `"Caramel, search <query> on google"` | Google | Opens Google search in a new tab in Brave |
+| `"Caramel, search <query> in a new window"` | Google | Launches separate Brave window with Google search |
+| `"Caramel, search <query> on youtube"` | YouTube | Opens YouTube search results in a new tab in Brave |
+| `"Caramel, search <query> on youtube in a new window"` | YouTube | Launches separate Brave window with YouTube search |
 
-> **Prefix Disambiguation**: Saying `"Caramel, open YouTube in a new window"` will **never** trigger `"open YouTube"` prematurely. The engine buffers speech incrementally and dispatches only after VAD verifies the complete utterance has ended (400 ms silence).
+### B. Student & University Portals (Christ University)
+| Spoken Phrase / Aliases | Destination |
+| :--- | :--- |
+| `"Caramel, open christ university portal"` / `"open portal"` / `"open cue"` / `"open espro"` / `"open attendance"` | [CUE Student Portal](https://cue.christuniversity.in/main/home) |
+| `"Caramel, open kp"` / `"open k p"` / `"open knowledge pro"` | [KnowledgePro Portal](https://kp.christuniversity.in/KnowledgePro/Login.do) |
+| *(Append `"in a new window"` to open in a dedicated browser window)* | |
+
+### C. Desktop Applications & Office Suite
+| Spoken Phrase / Aliases | Target Application |
+| :--- | :--- |
+| `"Caramel, open Antigravity"` | Google Antigravity (`/snap/bin/antigravity`) |
+| `"Caramel, open Brave"` | Brave Browser (`--new-window`) |
+| `"Caramel, open Terminal"` | GNOME Terminal (`--window`) |
+| `"Caramel, open LibreOffice"` | LibreOffice Start Center (`libreoffice`) |
+| `"Caramel, open writer"` / `"open document"` | LibreOffice Writer (`libreoffice --writer`) |
+| `"Caramel, open calc"` / `"open spreadsheet"` | LibreOffice Calc (`libreoffice --calc`) |
+| `"Caramel, open impress"` / `"open presentation"` | LibreOffice Impress (`libreoffice --impress`) |
+| `"Caramel, open draw"` | LibreOffice Draw (`libreoffice --draw`) |
+| `"Caramel, open files"` / `"open file manager"` | GNOME Files / Nautilus |
+| `"Caramel, open calculator"` | GNOME Calculator |
+| `"Caramel, open system monitor"` / `"open task manager"` | GNOME System Monitor |
+| `"Caramel, open ChatGPT app"` | ChatGPT Desktop App |
+| `"Caramel, open VLC"` / `"open media player"` | VLC Media Player (Flatpak/native) |
+| `"Caramel, open GIMP"` / `"open image editor"` | GIMP (native/Flatpak) |
+| `"Caramel, open Krita"` / `"open paint"` | Krita Digital Painting (Flatpak) |
+| `"Caramel, open OBS"` / `"open stream studio"` | OBS Studio (Flatpak) |
+| `"Caramel, open Cryptomator"` | Cryptomator Flatpak |
+| `"Caramel, open text editor"` | GNOME Text Editor |
+| `"Caramel, open settings"` | GNOME Control Center |
+
+### D. Web Destinations
+| Spoken Phrase | Target URL |
+| :--- | :--- |
+| `"Caramel, open YouTube"` | `https://youtube.com` |
+| `"Caramel, open Gemini"` | `https://gemini.google.com` |
+| `"Caramel, open Claude"` | `https://claude.ai` |
+| `"Caramel, open WhatsApp"` | `https://web.whatsapp.com` |
+| `"Caramel, open Spotify"` | `https://open.spotify.com` |
+| `"Caramel, open Gmail"` / `"open mail"` | `https://mail.google.com` |
+| `"Caramel, open Google Classroom"` / `"open gcr"` | `https://classroom.google.com` |
+| `"Caramel, open GitHub"` | `https://github.com` |
+| `"Caramel, open LinkedIn"` | `https://www.linkedin.com` |
+| `"Caramel, open Instagram"` | `https://www.instagram.com` |
+| `"Caramel, open Crunchyroll"` | `https://www.crunchyroll.com` |
+| `"Caramel, open Reddit"` | `https://reddit.com` |
+| `"Caramel, open Wikipedia"` / `"open wiki"` | `https://en.wikipedia.org` |
+
+### E. System Audio Volume Controls (PipeWire / WirePlumber)
+| Spoken Phrase | Action |
+| :--- | :--- |
+| `"Caramel, volume up"` / `"increase volume"` | Increases default audio sink volume by 5% (`wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+`) |
+| `"Caramel, volume down"` / `"decrease volume"` | Decreases default audio sink volume by 5% (`wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-`) |
+| `"Caramel, mute volume"` / `"mute audio"` | Mutes default audio sink (`wpctl set-mute @DEFAULT_AUDIO_SINK@ 1`) |
+| `"Caramel, unmute volume"` / `"unmute audio"` | Unmutes default audio sink (`wpctl set-mute @DEFAULT_AUDIO_SINK@ 0`) |
 
 ---
 
-## 4. Usage
+## 5. Usage
 
 ### A. Run in Terminal (Foreground)
 Activate virtualenv and start:
@@ -110,44 +167,12 @@ python run.py --dry-run
 ```bash
 python run.py --name Uranus
 ```
-*(Or permanently edit `AGENT_NAME = "Uranus"` in `config/settings.py`)*
+*(Or edit `AGENT_NAME = "Uranus"` in `config/settings.py`)*
 
-### D. List Audio Input Devices
+### D. Run Full Test Suite
 ```bash
-python run.py --list-devices
+for t in tests/test_*.py; do python "$t"; done
 ```
-
-### E. Run Full Test Suite & Latency Benchmark
-```bash
-python run.py --benchmark
-# Or run all unit tests:
-for t in tests/test_part*.py; do python "$t"; done
-```
-
----
-
-## 5. Background Operation (Systemd User Service)
-
-To run Caramel automatically in the background on Zorin OS:
-
-```bash
-# Install and enable on user login
-./scripts/service_manager.sh install
-
-# Start service
-./scripts/service_manager.sh start
-
-# Check service status
-./scripts/service_manager.sh status
-
-# View live logs
-./scripts/service_manager.sh logs
-
-# Stop service
-./scripts/service_manager.sh stop
-```
-
----
 
 ## 6. Extending with New Modular Applications
 

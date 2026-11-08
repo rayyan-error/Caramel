@@ -42,9 +42,28 @@ class ApplicationLauncher:
     ) -> Tuple[bool, List[str], str]:
         """
         Compiles the exact argv argument list for a command definition.
+        Supports standard desktop applications, web URLs, and SYSTEM_ACTION commands.
         Returns:
             (is_valid: bool, argv_list: List[str], error_message: str)
         """
+        if command.action_type == "SYSTEM_ACTION":
+            raw_args = command.extra_params.get("args", [])
+            if not raw_args:
+                return False, [], f"System command '{command.command_id}' has no executable args configured."
+            bin_name = raw_args[0]
+            resolved_bin = shutil.which(bin_name) if not os.path.isabs(bin_name) else bin_name
+            if not self.dry_run:
+                is_valid_bin = False
+                if resolved_bin:
+                    if os.path.isabs(resolved_bin) and os.path.isfile(resolved_bin) and os.access(resolved_bin, os.X_OK):
+                        is_valid_bin = True
+                    elif shutil.which(resolved_bin):
+                        is_valid_bin = True
+                if not is_valid_bin:
+                    return False, [], f"System binary '{bin_name}' not found or not executable."
+            final_args = [resolved_bin or bin_name] + list(raw_args[1:])
+            return True, final_args, ""
+
         app = app_config or config.get_app(command.target_app)
         if not app:
             return False, [], f"Target application '{command.target_app}' is not registered in configuration."

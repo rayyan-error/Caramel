@@ -136,7 +136,7 @@ def test_rejection_of_invalid_and_extended_phrases():
         "open youtube now",
         "[unk]",
         "open [unk]",
-        "open spotify",
+        "open netflix",
         "",
         "   ",
     ]

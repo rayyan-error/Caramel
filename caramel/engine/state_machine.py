@@ -14,6 +14,7 @@ import numpy as np
 
 from caramel.audio.vad import EndOfUtteranceDetector, SileroVAD, SpeechState
 from caramel.engine.registry import CommandRegistry
+from caramel.engine.search import parse_search_query, create_search_command
 from caramel.engine.trie import MatchResult
 from caramel.executor.launcher import ApplicationLauncher, ExecutionResult
 from caramel.recognizer.vosk_engine import VoskRecognizerEngine
@@ -67,6 +68,7 @@ class CaramelStateMachine:
         # Post-wake-word command speech tracking (supports both one-breath and two-breath commands)
         self._command_speech_started: bool = False
         self._post_wake_silence_seen: bool = False
+        self._command_audio_chunks: List[np.ndarray] = []
 
         # Timing and latency metrics
         self.wake_detected_time: float = 0.0
@@ -135,6 +137,8 @@ class CaramelStateMachine:
         self.eou_detector.reset()
         self._preroll_buffer.clear()
         self._dormant_hangover = 0
+        self._command_audio_chunks.clear()
+        self.recognizer.start_open_decoding()
 
         post_wake_words = self._extract_post_wake_words(current_text)
         self._command_speech_started = len(post_wake_words) > 0
@@ -190,6 +194,7 @@ class CaramelStateMachine:
 
             # 2. STATE: LISTENING_COMMAND
             elif self.current_state == AgentState.LISTENING_COMMAND:
+                self._command_audio_chunks.append(chunk)
                 is_speech, prob = self.vad.is_speech(chunk)
                 _, current_text = self.recognizer.feed_chunk(chunk, include_partial=True)
 
@@ -240,15 +245,70 @@ class CaramelStateMachine:
         Always returns to DORMANT.
         """
         raw_text = self.recognizer.get_final_result()
+        open_text = self.recognizer.get_open_final_result()
         cleaned_text = self._clean_spoken_text(raw_text)
+        cleaned_open_text = self._clean_spoken_text(open_text)
 
-        if not cleaned_text:
+        if not cleaned_text and not cleaned_open_text:
             if self.on_command_rejected:
                 self.on_command_rejected("Empty speech or silence", raw_text)
             self._finalize_and_return_dormant()
             return
 
-        # Query deterministic Trie
+        # 1. Check dynamic search intent
+        is_search_intent = (
+            cleaned_text.startswith("search")
+            or cleaned_open_text.startswith("search")
+            or "search" in cleaned_text.split()[:2]
+            or "search" in cleaned_open_text.split()[:2]
+        )
+
+        if is_search_intent:
+            search_res = None
+            text_to_parse = ""
+
+            if cleaned_open_text:
+                candidate_text = cleaned_open_text if cleaned_open_text.startswith("search") else f"search {cleaned_open_text}"
+                search_res = parse_search_query(candidate_text)
+                if search_res:
+                    text_to_parse = candidate_text
+
+            # If search_res not yet parsed or missing query terms, retry on buffered waveform
+            if search_res is None and self._command_audio_chunks:
+                try:
+                    pcm_bytes = np.concatenate(self._command_audio_chunks).tobytes()
+                    direct_open = self.recognizer.transcribe_open_waveform(pcm_bytes)
+                    cleaned_direct = self._clean_spoken_text(direct_open)
+                    if cleaned_direct:
+                        candidate_text = cleaned_direct if cleaned_direct.startswith("search") else f"search {cleaned_direct}"
+                        search_res = parse_search_query(candidate_text)
+                        if search_res:
+                            text_to_parse = candidate_text
+                except Exception:
+                    pass
+
+            if search_res is None and cleaned_text:
+                search_res = parse_search_query(cleaned_text)
+                if search_res:
+                    text_to_parse = cleaned_text
+
+            if search_res is not None:
+                command = create_search_command(search_res, phrase=text_to_parse)
+                self._current_metrics.match_completed_time = time.perf_counter()
+                if self.on_command_matched:
+                    self.on_command_matched(command, text_to_parse)
+
+                exec_result = self.launcher.execute(command)
+                self._current_metrics.execution_completed_time = time.perf_counter()
+                self.last_execution_result = exec_result
+                self.last_metrics = self._current_metrics
+                if self.on_command_executed:
+                    self.on_command_executed(exec_result)
+
+                self._finalize_and_return_dormant()
+                return
+
+        # 2. Query deterministic Trie
         match_result, command = self.registry.evaluate(cleaned_text)
         self._current_metrics.match_completed_time = time.perf_counter()
 
@@ -279,7 +339,9 @@ class CaramelStateMachine:
         self.vad.reset()
         self.eou_detector.reset()
         self.recognizer.reset()
+        self.recognizer.stop_open_decoding()
         self._preroll_buffer.clear()
+        self._command_audio_chunks.clear()
         self._dormant_hangover = 0
         self._dormant_dirty = False
         self._command_speech_started = False
