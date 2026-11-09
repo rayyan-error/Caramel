@@ -21,6 +21,18 @@ class SearchResult:
     url: str               # Fully encoded search URL
 
 
+# Pre-compiled regular expressions for fast query parsing
+_RE_LEADING_TRIGGER = re.compile(r"^(?:search\s+for|search|look\s+up|find)\b\s*")
+_RE_LEADING_ENGINE = re.compile(
+    r"^(?:(?:on|in|from|via)\s+(youtube|google)(?:\s+for)?|(youtube|google)\s+for)\b\s*"
+)
+_RE_TRAILING_ENGINE = re.compile(r"\s+\b(?:on|in|from|via)\s+(youtube|google)\s*$")
+_RE_BARE_TRAILING_ENGINE = re.compile(r"\s+\b(youtube|google)\s*$")
+_RE_LEADING_FOR = re.compile(r"^for\s+")
+_RE_DANGLE_PREFIX = re.compile(r"^(?:on|for)\s+")
+_RE_DANGLE_SUFFIX = re.compile(r"\s+(?:on|for)$")
+
+
 def parse_search_query(text: str) -> Optional[SearchResult]:
     """
     Parses a spoken or text search instruction and produces a SearchResult.
@@ -39,7 +51,10 @@ def parse_search_query(text: str) -> Optional[SearchResult]:
     if not raw:
         return None
 
-    lower = raw.lower()
+    lower = raw.lower().replace("[unk]", " ")
+    lower = " ".join(lower.split())
+    if not lower:
+        return None
 
     # 1. Detect and strip new window request
     new_window = False
@@ -50,28 +65,42 @@ def parse_search_query(text: str) -> Optional[SearchResult]:
         new_window = True
         lower = lower.replace("new window", " ")
 
-    # 2. Determine target search engine (YouTube vs Google default)
-    engine = "google"
-    if "youtube" in lower:
-        engine = "youtube"
-        lower = re.sub(r"\b(on|in|from|via)?\s*youtube\b", " ", lower)
-    elif "google" in lower:
-        engine = "google"
-        lower = re.sub(r"\b(on|in|from|via)?\s*google\b", " ", lower)
+    lower = " ".join(lower.split())
 
-    # 3. Strip search initiation trigger keywords
-    lower = re.sub(r"^(search\s+for|search|look\s+up|find)\s*", " ", lower)
-    lower = re.sub(r"^for\s+", " ", lower)
-
-    # 4. Clean extra spaces and normalize query terms, stripping any [unk] tokens
-    lower = lower.replace("[unk]", " ")
-    query = " ".join(lower.split())
-    if not query:
+    # 2. Strip leading search initiation trigger ("search for", "search", "look up", "find")
+    lower = _RE_LEADING_TRIGGER.sub("", lower).strip()
+    if not lower:
         return None
 
-    # Strip any trailing/leading preposition fragments if left behind
-    query = re.sub(r"^(on|for|in|about)\s+", "", query).strip()
-    query = re.sub(r"\s+(on|for|in)$", "", query).strip()
+    # 3. Determine target search engine (YouTube vs Google default) from prefix or suffix
+    # Checking suffix first handles queries like "search youtube api on google" accurately.
+    engine = "google"
+    engine_matched = False
+
+    m_trail = _RE_TRAILING_ENGINE.search(lower)
+    if m_trail:
+        engine = m_trail.group(1)
+        lower = lower[:m_trail.start()].strip()
+        engine_matched = True
+
+    if not engine_matched:
+        m_lead = _RE_LEADING_ENGINE.match(lower)
+        if m_lead:
+            engine = m_lead.group(1) or m_lead.group(2)
+            lower = lower[m_lead.end():].strip()
+            engine_matched = True
+
+    if not engine_matched:
+        m_bare = _RE_BARE_TRAILING_ENGINE.search(lower)
+        if m_bare:
+            engine = m_bare.group(1)
+            lower = lower[:m_bare.start()].strip()
+
+    # 4. Strip leading "for " if remaining (e.g. "search on google for <query>")
+    lower = _RE_LEADING_FOR.sub("", lower).strip()
+    query = _RE_DANGLE_PREFIX.sub("", lower).strip()
+    query = _RE_DANGLE_SUFFIX.sub("", query).strip()
+    query = " ".join(query.split())
 
     if not query:
         return None

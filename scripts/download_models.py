@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Download required offline models:
 1. Silero VAD v5 ONNX model (~1.8 MB)
@@ -21,7 +22,14 @@ VOSK_EXTRACT_PATH = MODELS_DIR / "vosk-model-small-en-us-0.15"
 
 def download_file(url: str, dest: Path):
     print(f"Downloading {url} -> {dest} ...")
-    urllib.request.urlretrieve(url, str(dest))
+    tmp_dest = dest.with_suffix(dest.suffix + ".tmp")
+    try:
+        urllib.request.urlretrieve(url, str(tmp_dest))
+        tmp_dest.replace(dest)
+    except Exception:
+        if tmp_dest.exists():
+            tmp_dest.unlink()
+        raise
     print(f"Done: {dest.stat().st_size} bytes.")
 
 

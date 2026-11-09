@@ -553,7 +553,7 @@ class Settings:
             target_app="brave",
             new_window=True,
             url="https://www.linkedin.com",
-            aliases=["open linked in in a new window"],
+            aliases=["open linked in in a new window", "open linked in a new window"],
         ),
         # ---------------------------------------------------------------------
         # Version 0.2: Portals, Desktop Applications & Web Hubs
@@ -642,6 +642,7 @@ class Settings:
             target_app="brave",
             new_window=False,
             url="https://open.spotify.com",
+            aliases=["open spot file"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_SPOTIFY_NEW_WINDOW",
@@ -650,6 +651,7 @@ class Settings:
             target_app="brave",
             new_window=True,
             url="https://open.spotify.com",
+            aliases=["open spot file in a new window"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_GMAIL",
@@ -658,7 +660,7 @@ class Settings:
             target_app="brave",
             new_window=False,
             url="https://mail.google.com",
-            aliases=["open mail"],
+            aliases=["open mail", "open g mail"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_GMAIL_NEW_WINDOW",
@@ -667,7 +669,7 @@ class Settings:
             target_app="brave",
             new_window=True,
             url="https://mail.google.com",
-            aliases=["open mail in a new window"],
+            aliases=["open mail in a new window", "open g mail in a new window"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_REDDIT",
@@ -773,7 +775,7 @@ class Settings:
             action_type="LAUNCH_APP",
             target_app="chatgpt",
             new_window=False,
-            aliases=["open chat g p t app", "open chat gpt"],
+            aliases=["open chat g p t app", "open chat gpt", "open chat g p t", "open chatgpt", "open chat app"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_VLC",
@@ -781,7 +783,7 @@ class Settings:
             action_type="LAUNCH_APP",
             target_app="vlc",
             new_window=False,
-            aliases=["open media player"],
+            aliases=["open media player", "open v l c"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_GIMP",
@@ -797,7 +799,7 @@ class Settings:
             action_type="LAUNCH_APP",
             target_app="krita",
             new_window=False,
-            aliases=["open paint"],
+            aliases=["open paint", "open cree ta"],
         ),
         CommandDefinition(
             command_id="CMD_OPEN_OBS",
@@ -805,7 +807,7 @@ class Settings:
             action_type="LAUNCH_APP",
             target_app="obs",
             new_window=False,
-            aliases=["open stream studio", "open obs studio"],
+            aliases=["open stream studio", "open obs studio", "open o b s", "open o b s studio"],
         ),
         CommandDefinition(
             command_id="CMD_VOLUME_UP",
@@ -837,7 +839,7 @@ class Settings:
             action_type="SYSTEM_ACTION",
             target_app="system",
             extra_params={"args": ["/usr/bin/wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "0"]},
-            aliases=["unmute audio", "unmute sound"],
+            aliases=["unmute audio", "unmute sound", "un mute volume", "un mute audio", "un mute sound", "a mute volume", "a mute audio", "a mute sound"],
         ),
     ])
 
@@ -860,6 +862,7 @@ class Settings:
         "vlc": "v l c",
         "krita": "cree ta",
         "unmute": "un mute",
+        "gmail": "g mail",
     })
 
     def __post_init__(self) -> None:

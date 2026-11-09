@@ -5,6 +5,7 @@ Main Entry Point and Runtime Daemon.
 """
 
 import argparse
+import os
 from pathlib import Path
 import select
 import signal
@@ -73,10 +74,10 @@ class TerminalEscListener:
         if not self._active or self._fd is None:
             return False
         try:
-            rlist, _, _ = select.select([sys.stdin], [], [], 0.0)
+            rlist, _, _ = select.select([self._fd], [], [], 0.0)
             if rlist:
-                ch = sys.stdin.read(1)
-                if ch == "\x1b":  # ESC key
+                data = os.read(self._fd, 32)
+                if data == b"\x1b":  # Standalone ESC key (not multi-byte arrow escape sequence)
                     return True
         except Exception:
             pass

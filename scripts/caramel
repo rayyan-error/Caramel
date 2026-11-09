@@ -13,7 +13,11 @@ SCRIPT_DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
 PROJECT_ROOT="$(cd -P "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd)"
 
 SERVICE_NAME="caramel.service"
-VENV_PYTHON="${PROJECT_ROOT}/.venv/bin/python"
+if [ -x "${PROJECT_ROOT}/.venv/bin/python" ]; then
+    VENV_PYTHON="${PROJECT_ROOT}/.venv/bin/python"
+else
+    VENV_PYTHON="python3"
+fi
 
 # ANSI Colors
 GREEN="\033[92m"
@@ -53,7 +57,7 @@ case "$1" in
         fi
         ;;
     status)
-        systemctl --user status "${SERVICE_NAME}" --no-pager -l
+        systemctl --user status "${SERVICE_NAME}" --no-pager -l || true
         ;;
     start)
         echo -e "${BLUE}Starting ${SERVICE_NAME}...${RESET}"

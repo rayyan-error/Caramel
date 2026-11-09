@@ -99,7 +99,7 @@ class AudioCapture:
         status: Any = None
     ) -> None:
         """Callback invoked by PortAudio for each audio block."""
-        chunk = indata.reshape(-1).copy()
+        chunk = indata[:, 0].copy() if indata.ndim > 1 else indata.copy()
         try:
             self._buffer.put_nowait(chunk)
         except queue.Full:

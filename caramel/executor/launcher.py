@@ -7,6 +7,7 @@ Detaches spawned processes in independent sessions.
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import time
 from typing import Dict, List, Optional, Tuple
@@ -51,15 +52,16 @@ class ApplicationLauncher:
             if not raw_args:
                 return False, [], f"System command '{command.command_id}' has no executable args configured."
             bin_name = raw_args[0]
-            resolved_bin = shutil.which(bin_name) if not os.path.isabs(bin_name) else bin_name
+            if os.path.isabs(bin_name):
+                if os.path.isfile(bin_name) and os.access(bin_name, os.X_OK):
+                    resolved_bin = bin_name
+                else:
+                    resolved_bin = shutil.which(os.path.basename(bin_name))
+            else:
+                resolved_bin = shutil.which(bin_name)
+
             if not self.dry_run:
-                is_valid_bin = False
-                if resolved_bin:
-                    if os.path.isabs(resolved_bin) and os.path.isfile(resolved_bin) and os.access(resolved_bin, os.X_OK):
-                        is_valid_bin = True
-                    elif shutil.which(resolved_bin):
-                        is_valid_bin = True
-                if not is_valid_bin:
+                if not resolved_bin or not (os.path.isfile(resolved_bin) and os.access(resolved_bin, os.X_OK)):
                     return False, [], f"System binary '{bin_name}' not found or not executable."
             final_args = [resolved_bin or bin_name] + list(raw_args[1:])
             return True, final_args, ""

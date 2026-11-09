@@ -24,13 +24,14 @@ class CommandRegistry:
             self.register(cmd)
 
     def register(self, command: CommandDefinition) -> None:
-        """Register a command and its explicit phrase aliases into the Trie."""
+        """Register a command, its explicit phrase aliases, and acoustic expansions into the Trie."""
         self._commands[command.command_id] = command
-        # Insert primary phrase
-        self.trie.insert(command.phrase, command)
-        # Insert aliases (e.g. "open anti gravity")
-        for alias in command.aliases:
-            self.trie.insert(alias, command)
+        phrases_to_register = [command.phrase] + list(command.aliases)
+        for phrase in phrases_to_register:
+            self.trie.insert(phrase, command)
+            acoustic_phrase = config._to_acoustic_phrase(phrase)
+            if acoustic_phrase and acoustic_phrase != phrase:
+                self.trie.insert(acoustic_phrase, command)
 
     def get_command(self, command_id: str) -> Optional[CommandDefinition]:
         """Retrieve command by its unique identifier."""
@@ -48,11 +49,22 @@ class CommandRegistry:
             return trie_result, trie_cmd
 
         # Check for dynamic search queries
-        cleaned = phrase.strip().lower()
-        if cleaned in ("search", "search for", "search on", "search on google", "search on youtube", "search in a new window"):
+        cleaned = " ".join(phrase.strip().lower().split())
+        if cleaned in (
+            "search",
+            "search for",
+            "search on",
+            "search on google",
+            "search on youtube",
+            "search on google for",
+            "search on youtube for",
+            "search in a new window",
+            "search on google in a new window",
+            "search on youtube in a new window",
+        ):
             return MatchResult.PREFIX_ONLY, None
 
-        if cleaned.startswith("search ") or cleaned.startswith("search\t"):
+        if cleaned.startswith("search "):
             search_res = parse_search_query(phrase)
             if search_res is not None:
                 search_cmd = create_search_command(search_res, phrase=phrase)

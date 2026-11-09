@@ -85,6 +85,25 @@ def test_dynamic_search_parsing_and_url_encoding():
     assert res_prep2.engine == "youtube"
     assert res_prep2.query == "interstellar soundtrack"
 
+    # 6b. Edge-case collision queries (engine keyword inside query payload & trailing prepositions)
+    res_collision1 = parse_search_query("search youtube api documentation on google")
+    assert res_collision1 is not None
+    assert res_collision1.engine == "google"
+    assert res_collision1.query == "youtube api documentation"
+
+    res_collision2 = parse_search_query("search on google for google pixel review")
+    assert res_collision2 is not None
+    assert res_collision2.engine == "google"
+    assert res_collision2.query == "google pixel review"
+
+    res_preposition_payload = parse_search_query("search in memory database")
+    assert res_preposition_payload is not None
+    assert res_preposition_payload.query == "in memory database"
+
+    res_trailing_in = parse_search_query("search how to log in")
+    assert res_trailing_in is not None
+    assert res_trailing_in.query == "how to log in"
+
     # 7. Dynamic CommandDefinition construction & Launcher argv test
     launcher = ApplicationLauncher(dry_run=True)
     cmd = create_search_command(res, phrase="search how are rockets made on google")
@@ -269,7 +288,17 @@ def test_system_volume_controls():
         assert valid, f"Failed building argv for {expected_id}: {err}"
         assert argv[1:] == expected_tail
 
-    print("  -> Passed: PipeWire volume control actions verified.")
+    # Also verify every acoustic phrase generated for Vosk grammar resolves in the Trie without collision
+    for cmd in config.COMMANDS:
+        for p in [cmd.phrase] + cmd.aliases:
+            acoustic = config._to_acoustic_phrase(p)
+            res_ac, cmd_ac = registry.evaluate(acoustic)
+            assert res_ac == MatchResult.EXACT_MATCH, f"Acoustic phrase '{acoustic}' (from '{p}') failed Trie match: {res_ac}"
+            assert cmd_ac is not None and cmd_ac.command_id == cmd.command_id, (
+                f"Collision on '{acoustic}': expected {cmd.command_id}, got {cmd_ac.command_id if cmd_ac else None}"
+            )
+
+    print("  -> Passed: PipeWire volume control actions and full acoustic-to-Trie bijection verified.")
 
 
 def test_real_audio_e2e_search_and_v02_commands():

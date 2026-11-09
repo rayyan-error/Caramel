@@ -71,12 +71,14 @@ Caramel/
 ├── systemd/
 │   └── caramel.service      # User systemd service unit template
 ├── scripts/
+│   ├── caramel              # Global CLI controller (start/stop/restart/status/logs/run)
 │   ├── configure_apps.py    # Desktop app autodetection & path resolver
 │   ├── download_models.py   # Automated offline AI model downloader
 │   └── service_manager.sh   # Background service manager (install/start/stop/status)
 ├── install.sh               # One-click universal installer
+├── CHANGELOG.md             # Full version history & release notes (v0.1.0 -> v0.2.5)
 ├── tests/                   # Complete automated test suites (Part 1 to Part 7 + v02)
-└── run.py                   # Main CLI runtime entry point
+├── run.py                   # Main CLI runtime entry point
 └── requirements.txt         # Pinned dependencies
 ```
 
@@ -192,7 +194,7 @@ python run.py --name Uranus
 for t in tests/test_*.py; do python "$t"; done
 ```
 
-## 6. Extending with New Modular Applications
+## 7. Extending with New Modular Applications
 
 To register a new desktop application (e.g., VS Code, Terminal), add it to `APPS` in `config/settings.py`:
 
@@ -216,3 +218,23 @@ CommandDefinition(
 )
 ```
 The Trie, grammar compilation, and launcher adapt automatically.
+
+---
+
+## 8. Version History & Release Notes
+
+See [`CHANGELOG.md`](./CHANGELOG.md) for the complete release record across all versions:
+
+- **`v0.2.5` (2026-11-09)** — Global `caramel` CLI service controller (`caramel restart`, `status`, `logs`), full acoustic-to-Trie bijection fixing 10 out-of-vocabulary commands, phonetic/coalescence collision fixes across all 53 commands, lazy on-demand open-vocabulary decoding (~4x speedup on standard commands), search query edge-case fixes, and system-wide audio/runtime hardening.
+- **`v0.2.0` (2026-11-09)** — Hybrid constrained + open-vocabulary Kaldi ASR, dynamic Google & YouTube voice search, Christ University student portals (`CUE` & `KnowledgePro`), expanded 19-app Linux desktop suite (LibreOffice, VLC, GIMP, Krita, OBS, GNOME utilities), and PipeWire/WirePlumber (`wpctl`) audio controls.
+- **`v0.1.0` (2026-11-08)** — Initial release featuring 16 kHz PCM capture, Silero VAD v5 ONNX engine, constrained-grammar Vosk ASR, $O(k)$ `CommandTrie` prefix matcher, 3-state execution engine, detached subprocess launcher, systemd user service, and universal multi-PC installer (`install.sh`).
+
+---
+
+## 9. Author & Contact
+
+- **Author:** Mohammad Rayyan
+- **Role:** Student at Christ University, Central Campus, Bangalore (Reg. No: `2641528`)
+- **Email:** [mohammad.rayyan@bcah.christuniversity.in](mailto:mohammad.rayyan@bcah.christuniversity.in)
+- **GitHub:** [https://github.com/rayyan-error](https://github.com/rayyan-error) (`@rayyan-error`)
+- **LinkedIn:** [https://www.linkedin.com/in/rayyan-error](https://www.linkedin.com/in/rayyan-error) (`rayyan-error`)

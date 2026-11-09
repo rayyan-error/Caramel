@@ -42,8 +42,19 @@ def find_desktop_binary(app_id: str) -> list[str]:
                     for line in desktop_file.read_text(errors="ignore").splitlines():
                         if line.startswith("Exec="):
                             cmd_part = line.split("=", 1)[1].strip()
-                            bin_name = cmd_part.split()[0] if cmd_part else ""
-                            bin_path = shutil.which(bin_name) or bin_name
+                            tokens = cmd_part.split()
+                            bin_name = ""
+                            for tok in tokens:
+                                cleaned_tok = tok.strip("\"'")
+                                if cleaned_tok == "env" or "=" in cleaned_tok or cleaned_tok.startswith("%"):
+                                    continue
+                                bin_name = cleaned_tok
+                                break
+                            if not bin_name:
+                                break
+                            bin_path = shutil.which(bin_name) or (
+                                bin_name if os.path.isabs(bin_name) and os.path.isfile(bin_name) and os.access(bin_name, os.X_OK) else None
+                            )
                             if bin_path and bin_path not in matches:
                                 matches.append(bin_path)
                             break

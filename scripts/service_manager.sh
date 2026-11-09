@@ -43,10 +43,10 @@ case "$1" in
         systemctl --user restart "${SERVICE_NAME}"
         ;;
     status)
-        systemctl --user status "${SERVICE_NAME}" --no-pager
+        systemctl --user status "${SERVICE_NAME}" --no-pager || true
         ;;
     logs)
-        journalctl --user-u "${SERVICE_NAME}" -f
+        journalctl --user -u "${SERVICE_NAME}" -f
         ;;
     uninstall)
         echo "Uninstalling ${SERVICE_NAME}..."

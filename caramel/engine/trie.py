@@ -17,6 +17,8 @@ class MatchResult(Enum):
 
 class TrieNode:
     """Node in the command prefix tree."""
+    __slots__ = ("children", "is_terminal", "command")
+
     def __init__(self):
         self.children: Dict[str, "TrieNode"] = {}
         self.is_terminal: bool = False

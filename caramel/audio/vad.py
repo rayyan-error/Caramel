@@ -63,14 +63,19 @@ class SileroVAD:
         # Pre-allocate buffers to avoid per-chunk heap allocations
         self._input_buffer = np.zeros((1, self.context_size + self.chunk_size), dtype=np.float32)
         self._state = np.zeros((2, 1, 128), dtype=np.float32)
-        self._context = np.zeros((1, self.context_size), dtype=np.float32)
+        self._context = self._input_buffer[:, :self.context_size]
+        self._ort_inputs = {
+            "input": self._input_buffer,
+            "state": self._state,
+            "sr": self.sample_rate
+        }
         self.reset()
 
     def reset(self) -> None:
         """Reset internal recurrent state and rolling context for a new utterance."""
         self._state.fill(0.0)
-        self._context.fill(0.0)
         self._input_buffer.fill(0.0)
+        self._ort_inputs["state"] = self._state
 
     def is_speech(
         self,
@@ -90,10 +95,7 @@ class SileroVAD:
         if len(audio_chunk) != self.chunk_size:
             raise ValueError(f"Expected chunk size {self.chunk_size}, got {len(audio_chunk)}")
 
-        # Prepend 64-sample context from previous chunk
-        self._input_buffer[0, :self.context_size] = self._context[0]
-
-        # Convert int16 to float32 [-1.0, 1.0] directly into pre-allocated buffer
+        # Convert int16 to float32 [-1.0, 1.0] directly into pre-allocated buffer after 64-sample context
         if audio_chunk.dtype == np.int16:
             np.multiply(
                 audio_chunk,
@@ -104,15 +106,10 @@ class SileroVAD:
         else:
             self._input_buffer[0, self.context_size:] = audio_chunk
 
-        inputs = {
-            "input": self._input_buffer,
-            "state": self._state,
-            "sr": self.sample_rate
-        }
-
-        outputs, self._state = self.session.run(None, inputs)
-        # Save last 64 samples as context for the next chunk
-        self._context[0] = self._input_buffer[0, -self.context_size:]
+        outputs, self._state = self.session.run(None, self._ort_inputs)
+        self._ort_inputs["state"] = self._state
+        # Roll last 64 samples into the leading context slot for the next chunk
+        self._input_buffer[0, :self.context_size] = self._input_buffer[0, -self.context_size:]
 
         prob = float(outputs[0][0])
         return prob >= threshold, prob

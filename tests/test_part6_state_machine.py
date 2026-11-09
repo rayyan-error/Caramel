@@ -82,10 +82,6 @@ class MockRecognizer(VoskRecognizerEngine):
     def transcribe_open_waveform(self, pcm_bytes):
         return self.text_to_return or self.open_text_to_return
 
-    def reset(self):
-        self.text_to_return = ""
-        self.partial_text = ""
-
 
 def test_happy_path_lifecycle():
     """Verify standard two-breath command execution lifecycle."""

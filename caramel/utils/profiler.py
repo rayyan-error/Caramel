@@ -46,15 +46,17 @@ class CommandMetrics:
 
 class PerformanceMonitor:
     """Monitors CPU and RAM footprint without third-party dependencies."""
+    _PAGE_SIZE_MB: float = os.sysconf("SC_PAGE_SIZE") / (1024.0 * 1024.0)
+    _CLK_TCK: float = float(os.sysconf("SC_CLK_TCK"))
+
     @staticmethod
     def get_memory_rss_mb() -> float:
         """Returns resident set size (RSS) in megabytes using /proc/self/statm."""
         try:
-            with open("/proc/self/statm", "r") as f:
+            with open("/proc/self/statm", "r", encoding="utf-8") as f:
                 parts = f.read().split()
                 rss_pages = int(parts[1])
-                page_size_kb = os.sysconf("SC_PAGE_SIZE") / 1024.0
-                return (rss_pages * page_size_kb) / 1024.0
+                return rss_pages * PerformanceMonitor._PAGE_SIZE_MB
         except Exception:
             return 0.0
 
@@ -62,10 +64,13 @@ class PerformanceMonitor:
     def get_cpu_times() -> tuple[float, float]:
         """Returns (user_time_s, system_time_s) from /proc/self/stat."""
         try:
-            with open("/proc/self/stat", "r") as f:
-                parts = f.read().split()
-                utime = float(parts[13]) / os.sysconf("SC_CLK_TCK")
-                stime = float(parts[14]) / os.sysconf("SC_CLK_TCK")
+            with open("/proc/self/stat", "r", encoding="utf-8") as f:
+                stat_str = f.read()
+                # Safely skip past '(comm)' which may contain spaces
+                rparen = stat_str.rfind(")")
+                after_comm = stat_str[rparen + 2:].split()
+                utime = float(after_comm[11]) / PerformanceMonitor._CLK_TCK
+                stime = float(after_comm[12]) / PerformanceMonitor._CLK_TCK
                 return utime, stime
         except Exception:
             return 0.0, 0.0

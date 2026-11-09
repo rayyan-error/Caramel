@@ -59,6 +59,15 @@ class CaramelStateMachine:
 
         self.current_state = AgentState.DORMANT
         self._custom_wake_word = wake_word.strip().lower() if wake_word else None
+        if (
+            self._custom_wake_word
+            and hasattr(self.recognizer, "grammar_list")
+            and self._custom_wake_word not in self.recognizer.grammar_list
+        ):
+            updated_grammar = [self._custom_wake_word] + [
+                g for g in self.recognizer.grammar_list if g != config.wake_word
+            ]
+            self.recognizer.update_grammar(updated_grammar)
 
         # Pre-roll and hangover state for DORMANT wake-word spotting
         self._preroll_buffer: Deque[np.ndarray] = collections.deque(maxlen=self.PREROLL_CHUNKS)
@@ -138,9 +147,15 @@ class CaramelStateMachine:
         self._preroll_buffer.clear()
         self._dormant_hangover = 0
         self._command_audio_chunks.clear()
-        self.recognizer.start_open_decoding()
 
         post_wake_words = self._extract_post_wake_words(current_text)
+        # Only start open-vocabulary decoding when a dynamic search command is detected,
+        # avoiding unnecessary full-graph decoding overhead on standard commands.
+        if "search" in post_wake_words:
+            self.recognizer.start_open_decoding()
+        else:
+            self.recognizer.stop_open_decoding()
+
         self._command_speech_started = len(post_wake_words) > 0
         self._post_wake_silence_seen = not is_speech
 
@@ -198,9 +213,14 @@ class CaramelStateMachine:
                 is_speech, prob = self.vad.is_speech(chunk)
                 _, current_text = self.recognizer.feed_chunk(chunk, include_partial=True)
 
+                post_words = self._extract_post_wake_words(current_text)
+                if not getattr(self.recognizer, "is_open_decoding", False) and "search" in post_words:
+                    self.recognizer.start_open_decoding()
+                    if hasattr(self.recognizer, "feed_open_chunks"):
+                        self.recognizer.feed_open_chunks(self._command_audio_chunks)
+
                 # Determine whether post-wake-word command speech has started
                 if not self._command_speech_started:
-                    post_words = self._extract_post_wake_words(current_text)
                     if len(post_words) > 0:
                         self._command_speech_started = True
                         self._current_metrics.speech_start_time = time.perf_counter()

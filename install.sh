@@ -8,6 +8,7 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${SCRIPT_DIR}"
 cd "${SCRIPT_DIR}"
 
 # ANSI Colors
